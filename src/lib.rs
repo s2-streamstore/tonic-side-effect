@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 use tonic::body::BoxBody;
 use tonic::transport::channel::ResponseFuture;
-use tonic::transport::Channel;
+use tonic::transport::{Channel, Error};
 use tonic::Status;
 use tower_service::Service;
 
@@ -88,7 +88,7 @@ impl RequestFrameMonitor {
 
 impl Service<http::Request<BoxBody>> for RequestFrameMonitor {
     type Response = Response<BoxBody>;
-    type Error = tonic::transport::Error;
+    type Error = Error;
     type Future = ResponseFuture;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
