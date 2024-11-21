@@ -709,7 +709,6 @@ version = "0.1.0"
 dependencies = [
  "http",
  "hyper",
- "pin-project",
  "tonic",
  "tower-service",
 ]
