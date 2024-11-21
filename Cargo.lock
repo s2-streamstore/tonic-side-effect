@@ -705,11 +705,10 @@ dependencies = [
 
 [[package]]
 name = "tonic-side-effect"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "http",
  "hyper",
- "pin-project",
  "tonic",
  "tower-service",
 ]
