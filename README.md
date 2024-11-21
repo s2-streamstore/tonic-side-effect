@@ -2,7 +2,7 @@
 
 This crate provides a [tower](https://github.com/tower-rs/tower) service for wrapping a [tonic](https://github.com/hyperium/tonic) [Channel](https://docs.rs/tonic/latest/tonic/transport/struct.Channel.html), which monitors if a request [Body](https://docs.rs/http-body/latest/http_body/trait.Body.html) ever produced a frame before returning an error.
 
-The service communicates whether or not `poll_frame` on the request ever produced data via a `FrameSignal`.
+The service communicates whether `poll_frame` on the request ever produced data, via a handle to shared state.
 
 ### Why might this be helpful?
 

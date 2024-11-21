@@ -10,7 +10,7 @@ use tonic::transport::{Channel, Error};
 use tonic::Status;
 use tower_service::Service;
 
-/// Struct for indicating if a frame has been produced.
+/// Resettable handle for indicating if a frame has been produced.
 #[derive(Clone, Debug, Default)]
 pub struct FrameSignal(Arc<AtomicBool>);
 
