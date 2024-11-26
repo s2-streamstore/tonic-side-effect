@@ -11,5 +11,6 @@ repository = "https://github.com/s2-streamstore/tonic-side-effect"
 [dependencies]
 http = "1"
 hyper = "1"
+pin-project-lite = "0.2"
 tonic = "0.12"
 tower-service = "0.3.3"

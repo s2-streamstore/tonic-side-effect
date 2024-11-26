@@ -1,13 +1,11 @@
-use http::Response;
-use hyper::body::{Body, Bytes, Frame, SizeHint};
+use hyper::body::{Body, Frame, SizeHint};
+use pin_project_lite::pin_project;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use tonic::body::BoxBody;
-use tonic::transport::channel::ResponseFuture;
-use tonic::transport::{Channel, Error};
-use tonic::Status;
+use tonic::transport::Channel;
 use tower_service::Service;
 
 /// Resettable handle for indicating if a frame has been produced.
@@ -32,23 +30,30 @@ impl FrameSignal {
     }
 }
 
-struct RequestFrameMonitorBody {
-    inner: Pin<Box<dyn Body<Data = Bytes, Error = Status> + Send + 'static>>,
-    frame_signal: FrameSignal,
+pin_project! {
+    struct RequestFrameMonitorBody<B> {
+        #[pin]
+        inner: B,
+        frame_signal: FrameSignal,
+    }
 }
 
-impl Body for RequestFrameMonitorBody {
-    type Data = Bytes;
-    type Error = Status;
+impl<B> Body for RequestFrameMonitorBody<B>
+where
+    B: Body,
+{
+    type Data = B::Data;
+    type Error = B::Error;
 
     fn poll_frame(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         cx: &mut Context<'_>,
     ) -> Poll<Option<Result<Frame<Self::Data>, Self::Error>>> {
-        match self.inner.as_mut().poll_frame(cx) {
+        let this = self.project();
+        match this.inner.poll_frame(cx) {
             Poll::Ready(Some(res)) => match res {
                 Ok(frame) => {
-                    self.frame_signal.signal();
+                    this.frame_signal.signal();
                     Poll::Ready(Some(Ok(frame)))
                 }
                 Err(status) => Poll::Ready(Some(Err(status))),
@@ -69,16 +74,19 @@ impl Body for RequestFrameMonitorBody {
 
 /// Service for monitoring if an HTTP request frame was ever emitted.
 #[derive(Clone, Debug)]
-pub struct RequestFrameMonitor {
+pub struct RequestFrameMonitor<S = Channel>
+where
+    S: Clone,
+{
     /// Wrapped channel to monitor.
-    inner: Channel,
+    inner: S,
 
     /// Signal indicating if request frame has been produced.
     frame_signal: FrameSignal,
 }
 
-impl RequestFrameMonitor {
-    pub fn new(inner: Channel, frame_signal: FrameSignal) -> Self {
+impl<S: Clone> RequestFrameMonitor<S> {
+    pub fn new(inner: S, frame_signal: FrameSignal) -> Self {
         Self {
             inner,
             frame_signal: frame_signal.clone(),
@@ -86,10 +94,13 @@ impl RequestFrameMonitor {
     }
 }
 
-impl Service<http::Request<BoxBody>> for RequestFrameMonitor {
-    type Response = Response<BoxBody>;
-    type Error = Error;
-    type Future = ResponseFuture;
+impl<S> Service<http::Request<BoxBody>> for RequestFrameMonitor<S>
+where
+    S: Service<http::Request<BoxBody>> + Clone,
+{
+    type Response = S::Response;
+    type Error = S::Error;
+    type Future = S::Future;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx)
@@ -98,7 +109,7 @@ impl Service<http::Request<BoxBody>> for RequestFrameMonitor {
     fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
         let (head, body) = req.into_parts();
         let body = BoxBody::new(RequestFrameMonitorBody {
-            inner: Box::pin(body),
+            inner: body,
             frame_signal: self.frame_signal.clone(),
         });
         // See <https://docs.rs/tower/latest/tower/trait.Service.html#be-careful-when-cloning-inner-services>
