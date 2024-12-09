@@ -7,6 +7,7 @@ license = "Apache-2.0"
 keywords = ["tonic", "grpc", "idempotency", "side-effect", "http"]
 categories = ["asynchronous"]
 repository = "https://github.com/s2-streamstore/tonic-side-effect"
+homepage = "https://github.com/s2-streamstore/tonic-side-effect"
 
 [dependencies]
 http = "1"
