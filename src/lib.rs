@@ -4,7 +4,7 @@ use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use tonic::body::BoxBody;
+use tonic::body::Body as TonicBody;
 use tonic::transport::Channel;
 use tower_service::Service;
 
@@ -94,9 +94,9 @@ impl<S: Clone> RequestFrameMonitor<S> {
     }
 }
 
-impl<S> Service<http::Request<BoxBody>> for RequestFrameMonitor<S>
+impl<S> Service<http::Request<TonicBody>> for RequestFrameMonitor<S>
 where
-    S: Service<http::Request<BoxBody>> + Clone,
+    S: Service<http::Request<TonicBody>> + Clone,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -106,9 +106,9 @@ where
         self.inner.poll_ready(cx)
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<TonicBody>) -> Self::Future {
         let (head, body) = req.into_parts();
-        let body = BoxBody::new(RequestFrameMonitorBody {
+        let body = TonicBody::new(RequestFrameMonitorBody {
             inner: body,
             frame_signal: self.frame_signal.clone(),
         });
