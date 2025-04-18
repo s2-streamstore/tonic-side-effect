@@ -1,7 +1,7 @@
 [package]
 name = "tonic-side-effect"
 description = "Tower service that can monitor if a Tonic request frame was produced prior to error."
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "Apache-2.0"
 keywords = ["tonic", "grpc", "idempotency", "side-effect", "http"]
@@ -13,5 +13,5 @@ homepage = "https://github.com/s2-streamstore/tonic-side-effect"
 http = "1"
 hyper = "1"
 pin-project-lite = "0.2"
-tonic = "0.12"
+tonic = "0.13"
 tower-service = "0.3.3"
